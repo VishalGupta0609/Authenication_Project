@@ -4,7 +4,8 @@ const express = require("express");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const port = 3000;
 const app=express();
@@ -39,9 +40,12 @@ app.get("/register",(req,res)=>{
 })
 
 app.post("/register",async (req,res)=>{
+
+    const hash = bcrypt.hashSync(req.body.password,saltRounds);
+
     const user = new User({
         email : req.body.username,
-        password : md5(req.body.password)
+        password : hash
     })
     try{
         const result = await user.save();
@@ -56,12 +60,12 @@ app.post("/register",async (req,res)=>{
 
 app.post("/login",async (req,res)=>{
     const username = req.body.username
-    const password = md5(req.body.password)
+    const password = req.body.password
     try{
         const result = await User.findOne({email : username})
         if(result)
         {
-            if(result.password === password)
+            if(bcrypt.compareSync(password,result.password))
                 res.render("secrets")
             else
                 res.send("'Password Does not Match...Try Again !'")
